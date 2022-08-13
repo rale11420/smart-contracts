@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 //not great error handling 
 error InvalidName();
 
+/// @title Simple fundraising contract
 contract FundRaising {
 
     event CampaignStart(uint id, address indexed creator, string name, uint targetAmount);
@@ -31,6 +32,11 @@ contract FundRaising {
     mapping(uint => Campaign) public campaigns;
     mapping(uint => mapping(address => uint)) public donations;
 
+    /// @notice Function starts new campaign with msg.sender as creator
+    /// @param _name is name of the campaign
+    /// @param _description is description of the campaign
+    /// @param _targetAmount is targetAmount of the campaign
+    /// @param _duration is duration of the campaign
     function startCampaign(string calldata _name, string calldata _description, uint _targetAmount, uint _duration) external {
         if (bytes(_name).length <= 0)
             revert InvalidName(); 
@@ -51,6 +57,8 @@ contract FundRaising {
         emit CampaignStart(id, msg.sender, _name, _targetAmount);
     }
 
+    /// @notice Function enables ETH donations to contract
+    /// @param campaignIndex is id of campaign in campaigns array
     function donate(uint campaignIndex) external payable ValidID(campaignIndex){
         Campaign storage temp = campaigns[campaignIndex];
         require(msg.sender != temp.creator, "Creator can't donate");
@@ -63,6 +71,8 @@ contract FundRaising {
         emit DonationMade(campaignIndex, msg.sender, msg.value);
     }
 
+    /// @notice Function enables canceling ETH donations to contract if campaign still active
+    /// @param campaignIndex is id of campaign in campaigns array
     function cancelDonation(uint campaignIndex) external ValidID(campaignIndex){     
         Campaign storage temp = campaigns[campaignIndex];
         require(temp.endTime >= block.timestamp, "Campaign is not active");
@@ -75,6 +85,8 @@ contract FundRaising {
         emit DonationCanceled(campaignIndex, msg.sender);
     }
 
+    /// @notice Function for finishing campaign, withdraw donations, can be called only by campaign creator
+    /// @param campaignIndex is id of campaign in campaigns array
     function finishCampaign(uint campaignIndex) external ValidID(campaignIndex){
         Campaign storage temp = campaigns[campaignIndex];
         require(temp.endTime <= block.timestamp, "Not enough time passed"); 
@@ -86,7 +98,9 @@ contract FundRaising {
 
         emit CampaignFinished(campaignIndex, msg.sender, temp.targetAmount); 
     }
-
+    
+    /// @notice Function enables refund donations if campaign wasn't success
+    /// @param campaignIndex is id of campaign in campaigns array
     function refundDonation(uint campaignIndex) external ValidID(campaignIndex) {
         Campaign memory temp = campaigns[campaignIndex];
         require(temp.endTime < block.timestamp,"Not enough time passed");
