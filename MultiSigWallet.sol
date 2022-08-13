@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-
+/// @title MultiSigWallet example
 contract MultiSigWallet {
 
     //events    
@@ -47,6 +47,8 @@ contract MultiSigWallet {
     mapping(address => bool) public isOwner;
     mapping(uint => mapping(address => bool)) public approvals;
 
+    /// @notice Adding owners in array
+    /// @param _owners is array of all the owners of wallet
     constructor(address[] memory _owners) {
         require(_owners.length > 0, "No owners in array");
         owner = msg.sender;
@@ -66,6 +68,9 @@ contract MultiSigWallet {
         emit Deposit(msg.sender, msg.value);
     }
 
+    /// @notice Creating new transaction
+    /// @param _to is address where msg.sender wants to send ETH
+    /// @param _amount is amount of ETH
     function Create(address _to, uint _amount) external onlyOwners {
         require(_to != address(0), "Transaction can't be sent to address 0");
         require(_amount > 0, "Amount must be greater then 0");
@@ -75,6 +80,8 @@ contract MultiSigWallet {
         emit CreateTransaction(transactions.length, msg.sender, _to, _amount);
     }
 
+    /// @notice Function is used by the owners to approve transactions
+    /// @param _id is id of transaction in trasaction array
     function Approve(uint _id) external onlyOwners ValidID(_id) NotExecuted(_id) {
         require(approvals[_id][msg.sender] == false, "Already approved");
         approvals[_id][msg.sender] = true;
@@ -83,6 +90,8 @@ contract MultiSigWallet {
         emit ApproveTransaction(_id, msg.sender);
     }
 
+    /// @notice Function is used by the owners to cancel already approved transactions 
+    /// @param _id is id of transaction in trasaction array
     function Cancel(uint _id) external onlyOwners ValidID(_id) NotExecuted(_id) {
         require(approvals[_id][msg.sender] == true, "Not approved");
         approvals[_id][msg.sender] = false;
@@ -91,6 +100,9 @@ contract MultiSigWallet {
         emit CancelApproval(_id, msg.sender);
     } 
 
+    /// @notice Function is used by the owners to execute already approved transactions 
+    /// @notice Amount of votes needed is 2/3 of all owners count
+    /// @param _id is id of transaction in trasaction array
     function Execute(uint _id) external onlyOwners ValidID(_id) NotExecuted(_id) {
         Transaction storage temp = transactions[_id];
         require((3*temp.numberOfConformations) >= (2*owners.length), "Not enough approvals");
@@ -102,6 +114,8 @@ contract MultiSigWallet {
         emit ExecuteTransaction(_id, temp.to, temp.amount);
     }   
 
+    /// @notice Function is used by owner (deployer)
+    /// @param _newOwner is address of owner who will be added
     function add(address _newOwner) external onlyOwner {
         require(_newOwner != address(0),"Owner can't be address 0");
         require(isOwner[_newOwner] == false,"Already owner");
@@ -112,6 +126,8 @@ contract MultiSigWallet {
         emit AddOwner(_newOwner);
     } 
     
+    /// @notice Function is used by owner (deployer)
+    /// @param _newOwner is address of owner who will be removed
     function remove(address _exOwner) external onlyOwner {
         require(_exOwner != address(0),"Owner can't be address 0");
         require(owner != _exOwner,"Owner can't be removed from owners");
