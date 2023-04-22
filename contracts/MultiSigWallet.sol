@@ -127,7 +127,7 @@ contract MultiSigWallet {
     } 
     
     /// @notice Function is used by owner (deployer)
-    /// @param _newOwner is address of owner who will be removed
+    /// @param _exOwner is address of owner who will be removed
     function remove(address _exOwner) external onlyOwner {
         require(_exOwner != address(0),"Owner can't be address 0");
         require(owner != _exOwner,"Owner can't be removed from owners");
