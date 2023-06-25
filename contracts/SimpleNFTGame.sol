@@ -11,6 +11,10 @@ error InvalidAmount();
 error NotPlayer(address notPlayer);
 
 // Goerli address: 0x24EA3F34cA6218e94d6138EF6C0c073E7BDE1D2f
+/**
+ * @title SimpleNFTGame
+ * @dev A simple game where players can create and battle NFT characters.
+ */
 contract SimpleNFTGame is ERC721URIStorage, Ownable {
 
     //events
@@ -43,12 +47,21 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
     mapping(uint => Character) public tokenIDToCharacter;
     mapping(address => bool) private players;
 
+    /**
+     * @dev Initializes the SimpleNFTGame contract.
+     * @param _vRFCoordinatorV2Interface The address of the VRFCoordinatorV2 contract.
+     * @param _baseFee The base fee required to start a game.
+     * @param _subscriptionId The subscription ID for the Chainlink VRF service.
+     */
     constructor(VRFCoordinatorV2Interface _vRFCoordinatorV2Interface, uint _baseFee, uint64 _subscriptionId) ERC721("NFTCharacter", "NFT") {
         vRFCoordinatorV2Interface = _vRFCoordinatorV2Interface;
         baseFee = _baseFee;
         subscriptionId = _subscriptionId;
     }
 
+    /**
+     * @dev Starts a game and mints a new NFT character for the player.
+     */
     function startGame() external payable {
         if(msg.value < baseFee) { revert InvalidAmount(); }
         players[msg.sender] = true;
@@ -60,6 +73,10 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
         tokenId += 1;
     }
 
+    /**
+     * @dev Requests random words from the Chainlink VRF service.
+     * @return requestId The request ID for the VRF request.
+     */
     function requestRandomWords() private returns(uint){
         bytes32 keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
         uint16 requestConfirmations = 3;
@@ -75,6 +92,11 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
         );
     }
 
+    /**
+     * @dev Allows a player to attack another character.
+     * @param attackerID The ID of the attacking character.
+     * @param victimID The ID of the victim character.
+     */
     function attack(uint attackerID, uint victimID) external onlyPlayers {
         Character memory attacker = tokenIDToCharacter[attackerID];
         require(attacker.owner == msg.sender);
@@ -97,7 +119,14 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
 
         emit AttackFinished(tokenIDToCharacter[winnerID].owner, attackerID, victimID);
     }
-    //fix ids in args
+
+    /**
+     * @notice fix ids in args
+     * @dev Simulates a fight between two characters and determines the winner.
+     * @param id1 The ID of the first character.
+     * @param id2 The ID of the second character.
+     * @return winningID The ID of the winning character.
+     */
     function fight(uint id1, uint id2) private returns(uint) {
         uint rand = requestRandomWords();
         uint randMod = rand % 100;
@@ -110,6 +139,10 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
         return (randMod <= winningID1rate ? id1 : id2);
     }
 
+    /**
+     * @dev Allows a player to breed their character and create a new one.
+     * @param characterID The ID of the character to breed.
+     */
     function breed(uint characterID) external onlyPlayers {
         Character memory character = tokenIDToCharacter[characterID];
         require(character.owner == msg.sender);
@@ -125,7 +158,10 @@ contract SimpleNFTGame is ERC721URIStorage, Ownable {
         tokenId += 1;
 
     }
-
+    
+    /**
+     * @dev Allows the contract owner to withdraw the contract balance.
+     */
     function withdraw() external onlyOwner {
         uint amount = address(this).balance;
         payable(msg.sender).transfer(amount);
